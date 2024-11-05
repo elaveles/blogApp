@@ -1,4 +1,4 @@
-import { Card, Button, Form } from 'react-bootstrap';
+import { Card, Button, Form, Spinner } from 'react-bootstrap';
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 
@@ -12,6 +12,8 @@ export default function PostCard({ post }) {
     const [isEditing, setIsEditing] = useState(false);
     const [editedTitle, setEditedTitle] = useState(title);
     const [editedContent, setEditedContent] = useState(content);
+    const [isAddingComment, setIsAddingComment] = useState(false);
+    const [loggedInUser, setLoggedInUser] = useState(null);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -22,13 +24,14 @@ export default function PostCard({ post }) {
                     'Content-Type': 'application/json',
                 }
             })
-            .then(res => res.json())
-            .then(data => {
-                if (data.user) {
-                    setLoggedInUserId(data.user._id);
-                    setIsAdmin(data.user.isAdmin);
-                }
-            });
+                .then(res => res.json())
+                .then(data => {
+                    if (data.user) {
+                        setLoggedInUserId(data.user._id);
+                        setIsAdmin(data.user.isAdmin);
+                        setLoggedInUser(data.user); 
+                    }
+                });
         }
 
         fetch(`${process.env.REACT_APP_API_URL}/comments/post/${_id}`, {
@@ -37,13 +40,13 @@ export default function PostCard({ post }) {
                 'Content-Type': 'application/json',
             }
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.comments) {
-                setPostComments(data.comments);
-            }
-        })
-        .catch(err => console.error('Error fetching comments:', err));
+            .then(res => res.json())
+            .then(data => {
+                if (data.comments) {
+                    setPostComments(data.comments);
+                }
+            })
+            .catch(err => console.error('Error fetching comments:', err));
     }, [_id]);
 
     const handleAddComment = () => {
@@ -57,6 +60,8 @@ export default function PostCard({ post }) {
             return;
         }
 
+        setIsAddingComment(true);
+
         fetch(`${process.env.REACT_APP_API_URL}/comments`, {
             method: 'POST',
             headers: {
@@ -65,23 +70,43 @@ export default function PostCard({ post }) {
             },
             body: JSON.stringify({ postId: _id, comment: newComment })
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) {
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Failed to Add Comment",
+                        text: data.message
+                    });
+                } else {
+                    const newCommentObj = {
+                        _id: data.comment._id,
+                        comment: data.comment.comment,
+                        userId: {
+                            _id: loggedInUser._id,
+                            username: loggedInUser.username
+                        },
+                        postId: _id
+                    };
+                    setPostComments(prevComments => [...prevComments, newCommentObj]);
+                    setNewComment("");
+                    Swal.fire({
+                        icon: "success",
+                        title: "Comment Added"
+                    });
+                }
+            })
+            .catch(err => {
                 Swal.fire({
                     icon: "error",
-                    title: "Failed to Add Comment",
-                    text: data.message
+                    title: "Error",
+                    text: "Something went wrong while adding your comment."
                 });
-            } else {
-                setPostComments([...postComments, data.comment]);
-                setNewComment("");
-                Swal.fire({
-                    icon: "success",
-                    title: "Comment Added"
-                });
-            }
-        });
+                console.error('Error adding comment:', err);
+            })
+            .finally(() => {
+                setIsAddingComment(false);
+            });
     };
 
     const handleDeletePost = () => {
@@ -111,22 +136,22 @@ export default function PostCard({ post }) {
                 'Authorization': `Bearer ${token}`
             }
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Unsuccessful Post Deletion",
-                    text: data.message
-                });
-            } else {
-                setIsPostDeleted(true);
-                Swal.fire({
-                    icon: "success",
-                    title: "Post Deleted"
-                });
-            }
-        });
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Unsuccessful Post Deletion",
+                        text: data.message
+                    });
+                } else {
+                    setIsPostDeleted(true);
+                    Swal.fire({
+                        icon: "success",
+                        title: "Post Deleted"
+                    });
+                }
+            });
     };
 
     const handleEditPost = () => {
@@ -152,23 +177,23 @@ export default function PostCard({ post }) {
             },
             body: JSON.stringify({ title: editedTitle, content: editedContent })
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Failed to Update Post",
-                    text: data.message
-                });
-            } else {
-                setIsEditing(false);
-                Swal.fire({
-                    icon: "success",
-                    title: "Post Updated"
-                });
-            }
-        })
-        .catch(err => console.error("Error updating post:", err));
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Failed to Update Post",
+                        text: data.message
+                    });
+                } else {
+                    setIsEditing(false);
+                    Swal.fire({
+                        icon: "success",
+                        title: "Post Updated"
+                    });
+                }
+            })
+            .catch(err => console.error("Error updating post:", err));
     };
 
     const handleCancelEdit = () => {
@@ -204,23 +229,23 @@ export default function PostCard({ post }) {
                 'Authorization': `Bearer ${token}`
             }
         })
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) {
-                Swal.fire({
-                    icon: "error",
-                    title: "Failed to Delete Comment",
-                    text: data.message
-                });
-            } else {
-                setPostComments(postComments.filter(comment => comment._id !== commentId));
-                Swal.fire({
-                    icon: "success",
-                    title: "Comment Deleted"
-                });
-            }
-        })
-        .catch(err => console.error("Error deleting comment:", err));
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Failed to Delete Comment",
+                        text: data.message
+                    });
+                } else {
+                    setPostComments(postComments.filter(comment => comment._id !== commentId));
+                    Swal.fire({
+                        icon: "success",
+                        title: "Comment Deleted"
+                    });
+                }
+            })
+            .catch(err => console.error("Error deleting comment:", err));
     };
 
     if (isPostDeleted) {
@@ -232,17 +257,17 @@ export default function PostCard({ post }) {
             <Card.Body>
                 {isEditing ? (
                     <>
-                        <Form.Control 
-                            type="text" 
-                            value={editedTitle} 
-                            onChange={(e) => setEditedTitle(e.target.value)} 
+                        <Form.Control
+                            type="text"
+                            value={editedTitle}
+                            onChange={(e) => setEditedTitle(e.target.value)}
                             className="mb-3"
                         />
-                        <Form.Control 
-                            as="textarea" 
-                            rows={5} 
-                            value={editedContent} 
-                            onChange={(e) => setEditedContent(e.target.value)} 
+                        <Form.Control
+                            as="textarea"
+                            rows={5}
+                            value={editedContent}
+                            onChange={(e) => setEditedContent(e.target.value)}
                             className="mb-3"
                         />
                         <Button variant="primary" onClick={handleSaveEdit} className="me-2">Save</Button>
@@ -265,13 +290,24 @@ export default function PostCard({ post }) {
                 ))}
                 {loggedInUserId && (
                     <Form.Group className="mt-3">
-                        <Form.Control 
-                            type="text" 
-                            placeholder="Add a comment" 
-                            value={newComment} 
-                            onChange={(e) => setNewComment(e.target.value)} 
+                        <Form.Control
+                            type="text"
+                            placeholder="Add a comment"
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
                         />
-                        <Button variant="primary" onClick={handleAddComment} className="mt-2">Submit Comment</Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleAddComment}
+                            className="mt-2"
+                            disabled={isAddingComment}
+                        >
+                            {isAddingComment ? (
+                                <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
+                            ) : (
+                                "Submit Comment"
+                            )}
+                        </Button>
                     </Form.Group>
                 )}
             </Card.Body>
