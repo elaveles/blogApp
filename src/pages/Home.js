@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { Row, Col } from 'react-bootstrap';
+import { Container, Row, Col, Button, Card, Stack } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import UserContext from '../UserContext';
 
@@ -7,19 +7,71 @@ export default function Home() {
     const { user } = useContext(UserContext);
 
     return (
-        <Row className="justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-            <Col className="mt-5 pt-5 text-center mx-auto">
-                <h1>Welcome to NoteNest</h1>
-                <p>Your Ideas, All in One Nest</p>
-                <Link className="btn btn-primary" to="/posts">Check All Posts</Link>
-                <div className="mt-3">
-                    {user.id !== null ? (
-                        <Link className="btn btn-secondary" to="/add">Create a New Post</Link>
-                    ) : (
-                        <Link className="btn btn-secondary" to="/register">Join Now</Link>
-                    )}
-                </div>
-            </Col>
-        </Row>
+        <Container fluid className="min-vh-100">
+            <Row className="justify-content-center align-items-center min-vh-100">
+                <Col xs={12} md={8} lg={6}>
+                    <Card className="border-0 shadow-lg">
+                        <Card.Body className="text-center p-5">
+                            
+                            <Card.Title as="h1" className="display-4 fw-bold mb-3">
+                                Welcome to NoteNest
+                            </Card.Title>
+                            
+                            <Card.Text className="lead text-muted mb-4">
+                                Your Ideas, All in One Nest
+                            </Card.Text>
+
+                            <Stack 
+                                direction="vertical" 
+                                gap={3} 
+                                className="mx-auto" 
+                                style={{ maxWidth: '300px' }}
+                            >
+                                <Button 
+                                    as={Link} 
+                                    to="/posts" 
+                                    variant="primary" 
+                                    size="lg" 
+                                    className="w-100"
+                                >
+                                    Check All Posts
+                                </Button>
+
+                                {user.id !== null ? (
+                                    <Button 
+                                        as={Link} 
+                                        to="/add" 
+                                        variant="outline-primary" 
+                                        size="lg" 
+                                        className="w-100"
+                                    >
+                                        Create a New Post
+                                    </Button>
+                                ) : (
+                                    <Button 
+                                        as={Link} 
+                                        to="/register" 
+                                        variant="outline-primary" 
+                                        size="lg" 
+                                        className="w-100"
+                                    >
+                                        Join Now
+                                    </Button>
+                                )}
+                            </Stack>
+
+                            {!user.id && (
+                                <Card.Text className="text-muted mt-4">
+                                    Already have an account?{' '}
+                                    <Link to="/login" className="text-decoration-none">
+                                        Sign in
+                                    </Link>
+                                </Card.Text>
+                            )}
+                        </Card.Body>
+                    </Card>
+                </Col>
+            </Row>
+        </Container>
     );
 }

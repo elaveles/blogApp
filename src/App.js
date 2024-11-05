@@ -4,7 +4,7 @@ import { BrowserRouter as Router } from 'react-router-dom';
 import { Route, Routes } from 'react-router-dom';
 import AppNavbar from './components/AppNavbar';
 import Home from './pages/Home';
-import BlogPosts from './pages/Blogs';
+import Posts from './pages/Posts';
 import Error from './pages/Error';
 import Login from './pages/Login';
 import Logout from './pages/Logout';
@@ -61,7 +61,7 @@ if (isLoading) {
         <Container>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/posts" element={<BlogPosts />} />
+            <Route path="/posts" element={<Posts />} />
             <Route path="/register" element={<Register />} />
             <Route path="/login" element={<Login />} />
             <Route path="/logout" element={<Logout />} />
