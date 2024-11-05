@@ -8,6 +8,10 @@ export default function PostCard({ post }) {
     const [newComment, setNewComment] = useState("");
     const [loggedInUserId, setLoggedInUserId] = useState(null);
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isPostDeleted, setIsPostDeleted] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedTitle, setEditedTitle] = useState(title);
+    const [editedContent, setEditedContent] = useState(content);
 
     useEffect(() => {
         const token = localStorage.getItem("token");
@@ -27,7 +31,7 @@ export default function PostCard({ post }) {
             });
         }
 
-        fetch(`${process.env.REACT_APP_API_URL}/post/${_id}`, {
+        fetch(`${process.env.REACT_APP_API_URL}/comments/post/${_id}`, {
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem("token")}`,
                 'Content-Type': 'application/json',
@@ -116,13 +120,59 @@ export default function PostCard({ post }) {
                     text: data.message
                 });
             } else {
+                setIsPostDeleted(true);
                 Swal.fire({
                     icon: "success",
                     title: "Post Deleted"
                 });
-                window.location.reload();
             }
         });
+    };
+
+    const handleEditPost = () => {
+        setIsEditing(true);
+    };
+
+    const handleSaveEdit = () => {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            Swal.fire({
+                icon: "warning",
+                title: "Authentication Required",
+                text: "You need to be logged in to edit a post."
+            });
+            return;
+        }
+
+        fetch(`${process.env.REACT_APP_API_URL}/posts/${_id}`, {
+            method: 'PATCH',
+            headers: {
+                "Content-Type": "application/json",
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ title: editedTitle, content: editedContent })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                Swal.fire({
+                    icon: "error",
+                    title: "Failed to Update Post",
+                    text: data.message
+                });
+            } else {
+                setIsEditing(false);
+                Swal.fire({
+                    icon: "success",
+                    title: "Post Updated"
+                });
+            }
+        })
+        .catch(err => console.error("Error updating post:", err));
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
     };
 
     const handleDeleteComment = (commentId) => {
@@ -169,15 +219,41 @@ export default function PostCard({ post }) {
                     title: "Comment Deleted"
                 });
             }
-        });
+        })
+        .catch(err => console.error("Error deleting comment:", err));
     };
+
+    if (isPostDeleted) {
+        return <div>Post deleted successfully.</div>;
+    }
 
     return (
         <Card className="mt-3">
             <Card.Body>
-                <Card.Title>{title}</Card.Title>
-                <Card.Subtitle>Author: {author.username}</Card.Subtitle>
-                <Card.Text>{content}</Card.Text>
+                {isEditing ? (
+                    <>
+                        <Form.Control 
+                            type="text" 
+                            value={editedTitle} 
+                            onChange={(e) => setEditedTitle(e.target.value)} 
+                            className="mb-3"
+                        />
+                        <Form.Control 
+                            as="textarea" 
+                            rows={5} 
+                            value={editedContent} 
+                            onChange={(e) => setEditedContent(e.target.value)} 
+                            className="mb-3"
+                        />
+                        <Button variant="primary" onClick={handleSaveEdit} className="me-2">Save</Button>
+                        <Button variant="secondary" onClick={handleCancelEdit}>Cancel</Button>
+                    </>
+                ) : (
+                    <>
+                        <Card.Title>{title}</Card.Title>
+                        <Card.Text>{content}</Card.Text>
+                    </>
+                )}
                 <Card.Subtitle>Comments:</Card.Subtitle>
                 {postComments.map(comment => (
                     <Card.Text key={comment._id}>
@@ -202,6 +278,9 @@ export default function PostCard({ post }) {
             <Card.Footer className="d-flex justify-content-around">
                 {(loggedInUserId === author._id || isAdmin) && (
                     <Button variant="danger" onClick={handleDeletePost}>Delete Post</Button>
+                )}
+                {loggedInUserId === author._id && (
+                    <Button variant="warning" onClick={handleEditPost}>Edit Post</Button>
                 )}
             </Card.Footer>
         </Card>

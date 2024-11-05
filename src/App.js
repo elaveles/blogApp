@@ -26,25 +26,33 @@ function App() {
 
     };
   
-    useEffect(() => {
-      if(localStorage.getItem("token") !== null) {
-        fetch(`${process.env.REACT_APP_API_URL}/users/profile`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}`}
-        })
-        .then(res => res.json())
-        .then(data => {
-            setUser({
-                id: data._id,
-                isAdmin: data.isAdmin
-            })
-        })
-      } else {
-        setUser({
-          id: null,
-          isAdmin: null
-        })  
-      }
-    }, [])
+const [isLoading, setIsLoading] = useState(true);
+
+useEffect(() => {
+  if(localStorage.getItem("token") !== null) {
+    fetch(`${process.env.REACT_APP_API_URL}/users/profile`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}`}
+    })
+    .then(res => res.json())
+    .then(data => {
+      setUser({
+        id: data._id,
+        isAdmin: data.isAdmin
+      });
+      setIsLoading(false);
+    });
+  } else {
+    setUser({
+      id: null,
+      isAdmin: null
+    });  
+    setIsLoading(false);
+  }
+}, []);
+
+if (isLoading) {
+  return <div>Loading...</div>;
+}
 
   return (
     <UserProvider value={{user, setUser, unsetUser}}>
