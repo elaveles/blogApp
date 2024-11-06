@@ -1,4 +1,4 @@
-import { Card, Button, Form, Spinner, Badge } from 'react-bootstrap';
+import { Card, Button, Form, Spinner } from 'react-bootstrap';
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 
